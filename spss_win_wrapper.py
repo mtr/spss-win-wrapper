@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import os
+import shlex
 import subprocess
 import sys
 from dataclasses import dataclass
@@ -144,7 +145,7 @@ def translate_path_to_windows(
         '-b',
         config.bottle_name,
         '-i',
-        f"winepath -w '{linux_path}'",
+        f'winepath -w {shlex.quote(str(linux_path))}',
     ]
 
     if verbose:
@@ -214,13 +215,13 @@ def build_spss_command(
         config.flatpak_app_id,
         'run',
         '-b',
-        f'"{config.bottle_name}"',
+        shlex.quote(config.bottle_name),
         '-p',
         config.program_name,
     ]
 
     if windows_paths:
-        cmd.extend([f'"{win_path}"' for win_path in windows_paths])
+        cmd.extend(map(shlex.quote, windows_paths))
 
     return cmd
 
