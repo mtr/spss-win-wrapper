@@ -6,6 +6,7 @@ import os
 import subprocess
 import sys
 from dataclasses import dataclass
+from datetime import datetime
 from pathlib import Path
 from typing import Annotated
 
@@ -22,6 +23,7 @@ DEFAULT_BOTTLE_NAME = 'SPSS'
 DEFAULT_PROGRAM_NAME = 'SPSS'
 DEFAULT_FLATPAK_APP_ID = 'com.usebottles.bottles'
 CONFIG_FILE_PATH = Path.home() / '.config' / 'spss-wrapper' / 'config.toml'
+LOG_DIR_PATH = Path.home() / '.local' / 'share' / 'spss-wrapper' / 'logs'
 
 
 @dataclass
@@ -223,6 +225,13 @@ def build_spss_command(
     return cmd
 
 
+def get_log_file_path() -> Path:
+    """Create log directory and return path for a new timestamped log file."""
+    LOG_DIR_PATH.mkdir(parents=True, exist_ok=True)
+    timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
+    return LOG_DIR_PATH / f'spss_{timestamp}.log'
+
+
 app = typer.Typer(
     help='Launch IBM SPSS through Bottles on Linux.',
     add_completion=False,
@@ -291,6 +300,13 @@ def main(
             help='Overwrite existing config file when using --init-config.',
         ),
     ] = False,
+    show_output: Annotated[
+        bool,
+        typer.Option(
+            '--show-output',
+            help='Show Bottles/Wine output in terminal instead of logging to file.',
+        ),
+    ] = False,
 ) -> None:
     """Launch IBM SPSS through Bottles, optionally opening files."""
     config = get_config(
@@ -340,21 +356,44 @@ def main(
     if dry_run:
         return
 
-    try:
-        subprocess.run(cmd, check=True)
-    except subprocess.CalledProcessError as e:
-        typer.echo(f'Error: SPSS exited with code {e.returncode}', err=True)
-        raise typer.Exit(e.returncode)
-    except FileNotFoundError:
-        typer.echo(
-            "Error: 'flatpak' command not found.\n\n"
-            'Please ensure Flatpak is installed:\n'
-            '  Ubuntu/Debian: sudo apt install flatpak\n'
-            '  Fedora: sudo dnf install flatpak\n'
-            '  Arch: sudo pacman -S flatpak',
-            err=True,
-        )
-        raise typer.Exit(1)
+    if show_output:
+        try:
+            subprocess.run(cmd, check=True)
+        except subprocess.CalledProcessError as e:
+            typer.echo(f'Error: SPSS exited with code {e.returncode}', err=True)
+            raise typer.Exit(e.returncode)
+        except FileNotFoundError:
+            typer.echo(
+                "Error: 'flatpak' command not found.\n\n"
+                'Please ensure Flatpak is installed:\n'
+                '  Ubuntu/Debian: sudo apt install flatpak\n'
+                '  Fedora: sudo dnf install flatpak\n'
+                '  Arch: sudo pacman -S flatpak',
+                err=True,
+            )
+            raise typer.Exit(1)
+    else:
+        log_file = get_log_file_path()
+        if verbose:
+            typer.echo(f'Log file: {log_file}')
+
+        try:
+            with log_file.open('w') as log:
+                subprocess.run(cmd, stdout=log, stderr=log, check=True)
+        except subprocess.CalledProcessError as e:
+            typer.echo(f'Error: SPSS exited with code {e.returncode}', err=True)
+            typer.echo(f'See log file for details: {log_file}', err=True)
+            raise typer.Exit(e.returncode)
+        except FileNotFoundError:
+            typer.echo(
+                "Error: 'flatpak' command not found.\n\n"
+                'Please ensure Flatpak is installed:\n'
+                '  Ubuntu/Debian: sudo apt install flatpak\n'
+                '  Fedora: sudo dnf install flatpak\n'
+                '  Arch: sudo pacman -S flatpak',
+                err=True,
+            )
+            raise typer.Exit(1)
 
 
 if __name__ == '__main__':
