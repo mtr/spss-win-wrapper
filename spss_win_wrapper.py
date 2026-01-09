@@ -50,9 +50,41 @@ def load_config_file() -> dict[str, str]:
         return {}
 
 
+def create_config_file(
+    bottle_name: str,
+    program_name: str,
+    flatpak_app_id: str,
+    force: bool = False,
+) -> None:
+    """Create the config file with the specified values."""
+    if CONFIG_FILE_PATH.exists() and not force:
+        typer.echo(f'Config file already exists: {CONFIG_FILE_PATH}', err=True)
+        typer.echo('Use --force to overwrite.', err=True)
+        raise typer.Exit(1)
+
+    # Create parent directory if it doesn't exist
+    CONFIG_FILE_PATH.parent.mkdir(parents=True, exist_ok=True)
+
+    config_content = f'''# SPSS Wrapper Configuration
+# Values here are overridden by environment variables and CLI flags.
+
+bottle_name = "{bottle_name}"
+program_name = "{program_name}"
+flatpak_app_id = "{flatpak_app_id}"
+'''
+
+    try:
+        CONFIG_FILE_PATH.write_text(config_content)
+        typer.echo(f'Created config file: {CONFIG_FILE_PATH}')
+    except OSError as e:
+        typer.echo(f'Error: Failed to create config file: {e}', err=True)
+        raise typer.Exit(1)
+
+
 def get_config(
     bottle_override: str | None = None,
     program_override: str | None = None,
+    flatpak_app_id_override: str | None = None,
 ) -> Config:
     """Get configuration with priority: CLI flags > env vars > config file > defaults."""
     file_config = load_config_file()
@@ -72,7 +104,8 @@ def get_config(
     )
 
     flatpak_app_id = (
-        os.environ.get('BOTTLES_FLATPAK_APP_ID')
+        flatpak_app_id_override
+        or os.environ.get('BOTTLES_FLATPAK_APP_ID')
         or file_config.get('flatpak_app_id')
         or DEFAULT_FLATPAK_APP_ID
     )
@@ -221,6 +254,13 @@ def main(
             help='Program name within the bottle (overrides env var and config file).',
         ),
     ] = None,
+    flatpak_app_id: Annotated[
+        str | None,
+        typer.Option(
+            '--flatpak-app-id',
+            help='Flatpak app ID for Bottles (overrides env var and config file).',
+        ),
+    ] = None,
     verbose: Annotated[
         bool,
         typer.Option(
@@ -237,9 +277,37 @@ def main(
             help='Show the command that would be executed without running it.',
         ),
     ] = False,
+    init_config: Annotated[
+        bool,
+        typer.Option(
+            '--init-config',
+            help='Create config file with current settings and exit.',
+        ),
+    ] = False,
+    force: Annotated[
+        bool,
+        typer.Option(
+            '--force',
+            '-f',
+            help='Overwrite existing config file when using --init-config.',
+        ),
+    ] = False,
 ) -> None:
     """Launch IBM SPSS through Bottles, optionally opening files."""
-    config = get_config(bottle_override=bottle, program_override=program)
+    config = get_config(
+        bottle_override=bottle,
+        program_override=program,
+        flatpak_app_id_override=flatpak_app_id,
+    )
+
+    if init_config:
+        create_config_file(
+            bottle_name=config.bottle_name,
+            program_name=config.program_name,
+            flatpak_app_id=config.flatpak_app_id,
+            force=force,
+        )
+        return
 
     if verbose:
         typer.echo('Configuration:')
