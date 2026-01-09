@@ -212,13 +212,13 @@ def build_spss_command(
         config.flatpak_app_id,
         'run',
         '-b',
-        config.bottle_name,
+        f'"{config.bottle_name}"',
         '-p',
         config.program_name,
     ]
 
     if windows_paths:
-        cmd.extend(windows_paths)
+        cmd.extend([f'"{win_path}"' for win_path in windows_paths])
 
     return cmd
 
