@@ -84,6 +84,17 @@ flatpak_app_id = "com.usebottles.bottles"
 | `--dry-run` | `-n` | Show command without executing |
 | `--init-config` | | Create config file and exit |
 | `--force` | `-f` | Overwrite existing config file |
+| `--show-output` | | Show Bottles/Wine output in terminal |
+
+## Logging
+
+By default, Bottles/Wine output is redirected to log files at:
+
+```
+~/.local/share/spss-wrapper/logs/spss_YYYYMMDD_HHMMSS.log
+```
+
+Use `--show-output` to display output in the terminal instead, or `--verbose` to see which log file is being used.
 
 ## Setting Up SPSS in Bottles
 
