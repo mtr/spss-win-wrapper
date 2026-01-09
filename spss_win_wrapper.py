@@ -17,7 +17,6 @@ if sys.version_info >= (3, 11):
 else:
     import tomli as tomllib
 
-
 # Default configuration values
 DEFAULT_BOTTLE_NAME = 'SPSS'
 DEFAULT_PROGRAM_NAME = 'SPSS'
