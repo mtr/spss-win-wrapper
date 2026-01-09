@@ -23,8 +23,47 @@ packages = ["."]
 package = true
 
 [tool.ruff]
-line-length = 80
+# Exclude a variety of commonly ignored directories.
+exclude = [
+    ".bzr",
+    ".direnv",
+    ".eggs",
+    ".git",
+    ".git-rewrite",
+    ".hg",
+    ".ipynb",
+    ".ipynb_checkpoints",
+    ".mypy_cache",
+    ".nox",
+    ".pants.d",
+    ".pyenv",
+    ".pytest_cache",
+    ".pytype",
+    ".ruff_cache",
+    ".svn",
+    ".tox",
+    ".venv",
+    ".vscode",
+    "__pypackages__",
+    "_build",
+    "buck-out",
+    "build",
+    "dist",
+    "node_modules",
+    "site-packages",
+    "venv",
+]
+
+# Target Python version
 target-version = "py312"
+
+# Enable or disable specific rule sets (see full list in docs)
+
+# Maximum line-length
+line-length = 80
+
+# Fix options
+fix = true
 
 [tool.ruff.format]
 # Prefer single quotes over double quotes.
@@ -34,11 +73,18 @@ line-ending = "auto"
 docstring-code-format = true
 
 [tool.ruff.lint]
-select = ["E", "F", "I"]
-ignore = ["E501"]
+select = ["E", "F", "UP", "I", "FURB"]
+ignore = []
 
 [tool.ruff.lint.per-file-ignores]
 "__init__.py" = ["F401"]
+
+[isort]
+known-first-party = ["leap"]
+section-order = ["future", "standard-library", "third-party", "first-party", "local-folder"]
+
+[pep8-naming]
+classmethod-decorators = ["classmethod", "pydantic.validator", "pydantic.root_validator"]
 
 [dependency-groups]
 dev = [
